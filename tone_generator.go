@@ -1,4 +1,5 @@
 /**
+* Copyright 2014 Jason Litzinger
 * Simple tone generator.  Generates wav files for a tone using the bit depth and frequency specified on the command line.
 */
 
