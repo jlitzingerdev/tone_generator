@@ -22,10 +22,10 @@ const DATA = "data"
 
 func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize int) {
 
-	n, _ := buf.WriteString(RIFF)
+	buf.WriteString(RIFF)
 	binary.Write(buf, binary.LittleEndian, uint32(36 + dataSize))
-	n, _ = buf.WriteString(WAVE)
-	n, _ = buf.WriteString(FMT)
+	buf.WriteString(WAVE)
+	buf.WriteString(FMT)
 	binary.Write(buf, binary.LittleEndian, uint32(16))
 	binary.Write(buf, binary.LittleEndian, uint16(1))
 	binary.Write(buf, binary.LittleEndian, uint16(channels))
