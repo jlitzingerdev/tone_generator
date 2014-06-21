@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 )
 
+const WAV_HDR_LEN = 44
+
 func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize int) {
 
 	binary.Write(buf, binary.BigEndian, []byte{'R','I','F','F'})
@@ -48,6 +50,7 @@ func main () {
 	buf := new(bytes.Buffer)
 	numSamples := sampleRate * duration * int(numChannels);
 	dataSize  := sampleRate * numChannels * (bitDepth / 8)
+	buf.Grow(WAV_HDR_LEN + dataSize)
 	buildWavHeader(buf, bitDepth, numChannels, sampleRate, dataSize)
 
 	for i := 0; i < numSamples; i++ {
