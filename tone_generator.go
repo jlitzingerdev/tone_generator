@@ -15,13 +15,17 @@ import (
 )
 
 const WAV_HDR_LEN = 44
+const RIFF = "RIFF"
+const WAVE = "WAVE"
+const FMT = "fmt "
+const DATA = "data"
 
 func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize int) {
 
-	binary.Write(buf, binary.BigEndian, []byte{'R','I','F','F'})
+	n, _ := buf.WriteString(RIFF)
 	binary.Write(buf, binary.LittleEndian, uint32(36 + dataSize))
-	binary.Write(buf, binary.BigEndian, []byte{'W','A','V','E'})
-	binary.Write(buf, binary.BigEndian, []byte{'f','m','t',' '})
+	n, _ = buf.WriteString(WAVE)
+	n, _ = buf.WriteString(FMT)
 	binary.Write(buf, binary.LittleEndian, uint32(16))
 	binary.Write(buf, binary.LittleEndian, uint16(1))
 	binary.Write(buf, binary.LittleEndian, uint16(channels))
@@ -31,15 +35,16 @@ func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize 
 	binary.Write(buf, binary.LittleEndian, uint32(sampleRate * channels * (bitDepth / 8)))
 	binary.Write(buf, binary.LittleEndian, uint16(channels * (bitDepth / 8)))
 	binary.Write(buf, binary.LittleEndian, uint16(bitDepth))
-	binary.Write(buf, binary.BigEndian, []byte{'d','a','t','a'})
+	buf.WriteString(DATA)
 	binary.Write(buf, binary.LittleEndian, uint32(dataSize))
 }
 
 func main () {
 	freq := flag.Int("f", 1000, "Tone frequency.")
 	rate := flag.Int("r", 8000, "Sample rate")
+	dur := flag.Int("d", 1, "Duration")
 	flag.Parse()
-	duration := 1
+	duration := *dur
 	numChannels := 1
 	bitDepth := 16
 
