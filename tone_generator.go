@@ -44,17 +44,17 @@ func main () {
 	rate := flag.Int("r", 8000, "Sample rate")
 	dur := flag.Int("d", 1, "Duration")
 	flag.Parse()
-	duration := *dur
+	sampleRate := *rate
 	numChannels := 1
 	bitDepth := 16
 
 	fmt.Printf("Tone Generator\n")
+	fmt.Printf("Sample Rate=%d, duration=%d, frequency=%d\n", sampleRate, *dur, *freq)
 	amplitude := 0.0
-	sampleRate := *rate
 
 	buf := new(bytes.Buffer)
-	numSamples := sampleRate * duration * int(numChannels);
-	dataSize  := sampleRate * numChannels * (bitDepth / 8)
+	numSamples := sampleRate * (*dur) * int(numChannels);
+	dataSize  := numSamples * numChannels * (bitDepth / 8)
 	buf.Grow(WAV_HDR_LEN + dataSize)
 	buildWavHeader(buf, bitDepth, numChannels, sampleRate, dataSize)
 
