@@ -7,6 +7,7 @@ package main
 
 import (
 	"flag"
+	"errors"
 	"fmt"
 	"bytes"
 	"encoding/binary"
@@ -39,27 +40,40 @@ func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize 
 	binary.Write(buf, binary.LittleEndian, uint32(dataSize))
 }
 
+func validateFreq(freq, sampleRate int) error {
+	if (sampleRate < (2 * freq)) {
+		return errors.New("Sample rate must be at least twice frequency")
+	}
+	return nil
+}
+
 func main () {
 	freq := flag.Int("f", 1000, "Tone frequency.")
 	rate := flag.Int("r", 8000, "Sample rate")
 	dur := flag.Int("d", 1, "Duration")
 	flag.Parse()
-	sampleRate := *rate
 	numChannels := 1
 	bitDepth := 16
 
-	fmt.Printf("Tone Generator\n")
-	fmt.Printf("Sample Rate=%d, duration=%d, frequency=%d\n", sampleRate, *dur, *freq)
 	amplitude := 0.0
 
+	err := validateFreq(*freq, *rate)
+	if err != nil {
+		fmt.Println(err);
+		return
+	}
+
+	fmt.Println("Tone Generator")
+	fmt.Printf("Sample Rate=%d, duration=%d, frequency=%d\n", *rate, *dur, *freq)
+
 	buf := new(bytes.Buffer)
-	numSamples := sampleRate * (*dur) * int(numChannels);
+	numSamples := (*rate) * (*dur) * int(numChannels);
 	dataSize  := numSamples * numChannels * (bitDepth / 8)
 	buf.Grow(WAV_HDR_LEN + dataSize)
-	buildWavHeader(buf, bitDepth, numChannels, sampleRate, dataSize)
+	buildWavHeader(buf, bitDepth, numChannels, *rate, dataSize)
 
 	for i := 0; i < numSamples; i++ {
-		amplitude = 32767.0 * math.Sin(2 * math.Pi * float64(*freq) * (float64(i) / float64(sampleRate)))
+		amplitude = 32767.0 * math.Sin(2 * math.Pi * float64(*freq) * (float64(i) / float64(*rate)))
 		binary.Write(buf, binary.LittleEndian, int16(amplitude))
 	}
 	ioutil.WriteFile("tone.wav", buf.Bytes(), 0666)
