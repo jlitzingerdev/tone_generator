@@ -68,7 +68,7 @@ func main () {
 
 	buf := new(bytes.Buffer)
 	numSamples := (*rate) * (*dur) * int(numChannels);
-	dataSize  := numSamples * numChannels * (bitDepth / 8)
+	dataSize  := (*rate) * (*dur)  * numChannels * (bitDepth / 8)
 	buf.Grow(WAV_HDR_LEN + dataSize)
 	buildWavHeader(buf, bitDepth, numChannels, *rate, dataSize)
 
