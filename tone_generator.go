@@ -9,10 +9,10 @@ import (
 	"flag"
 	"errors"
 	"fmt"
-	"bytes"
 	"encoding/binary"
 	"math"
-	"io/ioutil"
+	"os"
+	"io"
 )
 
 const WAV_HDR_LEN = 44
@@ -21,12 +21,12 @@ const WAVE = "WAVE"
 const FMT = "fmt "
 const DATA = "data"
 
-func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize int) {
+func buildWavHeader(buf io.Writer, bitDepth, channels, sampleRate, dataSize int) {
 
-	buf.WriteString(RIFF)
+	buf.Write([]byte(RIFF))
 	binary.Write(buf, binary.LittleEndian, uint32(36 + dataSize))
-	buf.WriteString(WAVE)
-	buf.WriteString(FMT)
+	buf.Write([]byte(WAVE))
+	buf.Write([]byte(FMT))
 	binary.Write(buf, binary.LittleEndian, uint32(16))
 	binary.Write(buf, binary.LittleEndian, uint16(1))
 	binary.Write(buf, binary.LittleEndian, uint16(channels))
@@ -36,7 +36,7 @@ func buildWavHeader(buf *bytes.Buffer, bitDepth, channels, sampleRate, dataSize 
 	binary.Write(buf, binary.LittleEndian, uint32(sampleRate * channels * (bitDepth / 8)))
 	binary.Write(buf, binary.LittleEndian, uint16(channels * (bitDepth / 8)))
 	binary.Write(buf, binary.LittleEndian, uint16(bitDepth))
-	buf.WriteString(DATA)
+	buf.Write([]byte(DATA))
 	binary.Write(buf, binary.LittleEndian, uint32(dataSize))
 }
 
@@ -66,16 +66,21 @@ func main () {
 	fmt.Println("Tone Generator")
 	fmt.Printf("Sample Rate=%d, duration=%d, frequency=%d\n", *rate, *dur, *freq)
 
-	buf := new(bytes.Buffer)
+	file, err := os.Create("tone.wav")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	defer file.Close()
+
 	numSamples := (*rate) * (*dur) * int(numChannels);
 	dataSize  := (*rate) * (*dur)  * numChannels * (bitDepth / 8)
-	buf.Grow(WAV_HDR_LEN + dataSize)
-	buildWavHeader(buf, bitDepth, numChannels, *rate, dataSize)
+	buildWavHeader(file, bitDepth, numChannels, *rate, dataSize)
 
 	for i := 0; i < numSamples; i++ {
 		amplitude = 32767.0 * math.Sin(2 * math.Pi * float64(*freq) * (float64(i) / float64(*rate)))
-		binary.Write(buf, binary.LittleEndian, int16(amplitude))
+		binary.Write(file, binary.LittleEndian, int16(amplitude))
 	}
-	ioutil.WriteFile("tone.wav", buf.Bytes(), 0666)
 }
 
