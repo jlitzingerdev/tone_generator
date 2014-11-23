@@ -7,12 +7,12 @@ package main
 
 import (
 	"flag"
-	"errors"
 	"fmt"
 	"encoding/binary"
 	"math"
 	"os"
 	"io"
+	"bufio"
 )
 
 const WAV_HDR_LEN = 44
@@ -20,6 +20,12 @@ const RIFF = "RIFF"
 const WAVE = "WAVE"
 const FMT = "fmt "
 const DATA = "data"
+
+type ToneError string
+
+func (e ToneError) Error() string {
+	return string(e)
+}
 
 func buildWavHeader(buf io.Writer, bitDepth, channels, sampleRate, dataSize int) {
 
@@ -42,7 +48,7 @@ func buildWavHeader(buf io.Writer, bitDepth, channels, sampleRate, dataSize int)
 
 func validateFreq(freq, sampleRate float64) error {
 	if (sampleRate < (2 * freq)) {
-		return errors.New("Sample rate must be at least twice frequency")
+		return ToneError("Sample rate must be at least twice frequency")
 	}
 	return nil
 }
@@ -75,17 +81,18 @@ func main () {
 	}
 
 	defer file.Close()
-
+	w := bufio.NewWriter(file)
 	numSamples := rate * duration
 	dataSize  := rate * duration  * numChannels * (bitDepth / 8)
-	buildWavHeader(file, bitDepth, numChannels, rate, dataSize)
+	buildWavHeader(w, bitDepth, numChannels, rate, dataSize)
 	ts := 1 / float64(rate)
 	freqRad := 2 * math.Pi * freq
 
 	for i := 0; i < numSamples; i++ {
 		amplitude = 32767.0 * math.Sin(freqRad * (float64(i) * ts))
-		binary.Write(file, binary.LittleEndian, int16(amplitude))
-		binary.Write(file, binary.LittleEndian, int16(amplitude))
+		binary.Write(w, binary.LittleEndian, int16(amplitude))
+		binary.Write(w, binary.LittleEndian, int16(amplitude))
 	}
+	w.Flush()
 }
 
