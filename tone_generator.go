@@ -40,7 +40,7 @@ func buildWavHeader(buf io.Writer, bitDepth, channels, sampleRate, dataSize int)
 	binary.Write(buf, binary.LittleEndian, uint32(dataSize))
 }
 
-func validateFreq(freq, sampleRate int) error {
+func validateFreq(freq, sampleRate float64) error {
 	if (sampleRate < (2 * freq)) {
 		return errors.New("Sample rate must be at least twice frequency")
 	}
@@ -48,23 +48,25 @@ func validateFreq(freq, sampleRate int) error {
 }
 
 func main () {
-	freq := flag.Int("f", 1000, "Tone frequency.")
-	rate := flag.Int("r", 8000, "Sample rate")
-	dur := flag.Int("d", 1, "Duration")
+	var duration, rate int
+	var freq float64
+	flag.Float64Var(&freq, "f", 1000, "Tone frequency.")
+	flag.IntVar(&rate, "r", 8000, "Sample rate")
+	flag.IntVar(&duration, "d", 1, "Duration")
 	flag.Parse()
-	numChannels := 1
+	numChannels := 2
 	bitDepth := 16
 
 	amplitude := 0.0
 
-	err := validateFreq(*freq, *rate)
+	err := validateFreq(freq, float64(rate))
 	if err != nil {
 		fmt.Println(err);
 		return
 	}
 
 	fmt.Println("Tone Generator")
-	fmt.Printf("Sample Rate=%d, duration=%d, frequency=%d\n", *rate, *dur, *freq)
+	fmt.Printf("Sample Rate=%d, duration=%d, frequency=%.2f\n", rate, duration, freq)
 
 	file, err := os.Create("tone.wav")
 	if err != nil {
@@ -74,12 +76,15 @@ func main () {
 
 	defer file.Close()
 
-	numSamples := (*rate) * (*dur) * int(numChannels);
-	dataSize  := (*rate) * (*dur)  * numChannels * (bitDepth / 8)
-	buildWavHeader(file, bitDepth, numChannels, *rate, dataSize)
+	numSamples := rate * duration
+	dataSize  := rate * duration  * numChannels * (bitDepth / 8)
+	buildWavHeader(file, bitDepth, numChannels, rate, dataSize)
+	ts := 1 / float64(rate)
+	freqRad := 2 * math.Pi * freq
 
 	for i := 0; i < numSamples; i++ {
-		amplitude = 32767.0 * math.Sin(2 * math.Pi * float64(*freq) * (float64(i) / float64(*rate)))
+		amplitude = 32767.0 * math.Sin(freqRad * (float64(i) * ts))
+		binary.Write(file, binary.LittleEndian, int16(amplitude))
 		binary.Write(file, binary.LittleEndian, int16(amplitude))
 	}
 }
